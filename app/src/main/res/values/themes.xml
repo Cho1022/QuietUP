@@ -1,0 +1,18 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Base.Theme.Quietp" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Theme.Quietp" parent="Base.Theme.Quietp" />
+
+    <!-- 스플래시 테마 (단순 버전) -->
+    <style name="Theme.Quietp.Splash" parent="Theme.SplashScreen">
+        <!-- 배경은 흰색 -->
+        <item name="windowSplashScreenBackground">@color/qup_white</item>
+
+        <!-- 예전처럼 런처 아이콘 그대로 사용 -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_quietup</item>
+
+        <!-- 스플래시 이후 적용할 앱 테마 -->
+        <item name="postSplashScreenTheme">@style/Theme.Quietp</item>
+    </style>
+
+</resources>
