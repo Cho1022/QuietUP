@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_post_all"
+        android:title="전체 게시글" />
+    <item
+        android:id="@+id/menu_post_free"
+        android:title="자유 게시판" />
+    <item
+        android:id="@+id/menu_post_notice"
+        android:title="공지사항" />
+</menu>
