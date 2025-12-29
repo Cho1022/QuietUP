@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarNoiseWrite"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
+        android:title="소음 신고" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/inputNoiseRoom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="우리 집 호수 (예: 302호)" />
+
+            <EditText
+                android:id="@+id/inputNoiseType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="소음 종류 (예: 의자 끄는 소리)" />
+
+            <EditText
+                android:id="@+id/inputNoiseMemo"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginTop="12dp"
+                android:gravity="top"
+                android:hint="상세 메모"
+                android:inputType="textMultiLine" />
+
+            <Button
+                android:id="@+id/buttonNoiseSubmit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="신고 등록" />
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>
