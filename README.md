@@ -47,7 +47,7 @@ Android(Java)
   → Amazon RDS for MySQL
 ```
 
-목표 아키텍처는 아직 구현되지 않았습니다. 다음 원칙을 기준으로 전환합니다.
+목표 아키텍처 전체는 아직 구현되지 않았습니다. 현재는 Spring Boot와 로컬 MySQL 실행 기반만 구성되어 있으며, Android REST 연동과 AWS 배포는 아직 구현하지 않았습니다. 다음 원칙을 기준으로 전환합니다.
 
 - Android 앱은 MySQL에 직접 연결하지 않고 HTTPS API만 호출합니다.
 - 인증과 권한 검증은 서버에서 수행합니다.
@@ -68,6 +68,16 @@ Android(Java)
 - Firebase Realtime Database
 - Firebase Storage·Analytics·Firestore 의존성
 
+### 현재 구현된 서버 기반
+
+- Java 21
+- Spring Boot 4.1.0
+- Spring Web MVC·Validation·Spring Data JPA
+- MySQL 8.4·Flyway
+- Docker Compose
+- Actuator Health Check
+- MySQL Testcontainers 통합 테스트
+
 ### 전환 목표(미구현)
 
 - Android Java
@@ -83,13 +93,24 @@ Android(Java)
 - Amazon CloudWatch
 - Amazon S3(필요 시)
 
-## 현재 상태
+## 현재 구현 상태
 
-- 기존 Android MVP의 로컬 빌드 기준선을 복구했습니다.
-- Git 기준선 커밋과 AWS 전환 전 태그를 보존했습니다.
-- 기존 Firebase 코드와 의존성은 마이그레이션 참고용으로 유지합니다.
-- 연결된 Firebase 프로젝트 환경은 더 이상 운영되지 않습니다.
-- Spring Boot 서버와 AWS 인프라는 아직 구현하지 않았습니다.
+- 기존 Android Java MVP와 Firebase 레거시 코드를 보존합니다.
+- Java 21 기반 Spring Boot 서버 실행 기반을 구성했습니다.
+- 로컬 MySQL 8.4 Docker Compose 환경을 구성했습니다.
+- `GET /actuator/health`로 서버와 DB 연결 상태를 확인할 수 있습니다.
+- Testcontainers가 실제 MySQL 8.4 연결과 최소 쿼리, Flyway 초기화를 검증합니다.
+- Android 앱은 아직 Spring Boot REST API에 연결되지 않았습니다.
+
+### 아직 구현되지 않은 항목
+
+- 서버 회원가입·로그인
+- Spring Security·JWT
+- 단지 및 거주 인증
+- 익명 소음 알림
+- 신고 및 차단
+- Android REST 연결
+- AWS 배포
 
 ## 로컬 빌드 기준선
 
@@ -115,6 +136,66 @@ cd android
 - JVM 단위 테스트 1건 통과
 - lint: 오류 0건, 경고 185건
 - Android 기기 또는 에뮬레이터가 없어 설치·초기 실행은 확인하지 못함
+
+## 저장소 구조
+
+```text
+QuietUP/
+├─ android/             # 기존 Android Java MVP
+├─ server/              # Spring Boot 서버 실행 기반
+├─ docs/
+├─ docker-compose.yml   # 로컬 MySQL 8.4
+├─ .env.example
+└─ README.md
+```
+
+## 서버 실행 방법
+
+Windows PowerShell 기준입니다.
+
+1. 저장소 루트에서 환경변수 예시를 로컬 파일로 복사합니다.
+
+```powershell
+Copy-Item .env.example .env
+```
+
+2. `.env`의 `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`, `DB_PASSWORD`를 로컬 개발용 값으로 변경합니다. `.env`는 Git에서 제외됩니다.
+3. 로컬 MySQL을 시작합니다.
+
+```powershell
+docker compose --env-file .env up -d --wait mysql
+```
+
+4. `.env`의 DB 연결값을 현재 PowerShell 프로세스에 주입하고 서버를 실행합니다.
+
+```powershell
+Get-Content .env | ForEach-Object {
+    if ($_ -match '^(DB_URL|DB_USERNAME|DB_PASSWORD)=(.*)$') {
+        Set-Item "Env:$($matches[1])" $matches[2]
+    }
+}
+
+cd server
+.\gradlew.bat bootRun --args="--spring.profiles.active=local"
+```
+
+5. 다른 PowerShell 창에서 Health Check를 확인합니다.
+
+```powershell
+Invoke-RestMethod http://localhost:8080/actuator/health
+```
+
+정상 응답은 HTTP 200과 `{"status":"UP"}`입니다. 종료 후 MySQL 컨테이너만 내릴 때는 저장소 루트에서 `docker compose --env-file .env down`을 실행합니다. named volume은 삭제하지 않습니다.
+
+## 서버 테스트
+
+Testcontainers 통합 테스트는 로컬 Docker Engine이 실행 중이어야 합니다. 로컬 Compose MySQL은 실행하지 않아도 됩니다.
+
+```powershell
+cd server
+.\gradlew.bat clean test
+.\gradlew.bat bootJar
+```
 
 ## 전환 로드맵
 
