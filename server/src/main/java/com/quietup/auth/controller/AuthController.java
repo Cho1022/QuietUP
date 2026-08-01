@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.quietup.user.dto.SignupRequest;
 import com.quietup.user.dto.SignupResponse;
 import com.quietup.user.service.UserSignupService;
+import com.quietup.auth.dto.AccessTokenResponse;
+import com.quietup.auth.dto.LoginRequest;
+import com.quietup.auth.service.AuthService;
 
 import jakarta.validation.Valid;
 
@@ -20,13 +23,20 @@ import jakarta.validation.Valid;
 public class AuthController {
 
     private final UserSignupService userSignupService;
+    private final AuthService authService;
 
-    public AuthController(UserSignupService userSignupService) {
+    public AuthController(UserSignupService userSignupService, AuthService authService) {
         this.userSignupService = userSignupService;
+        this.authService = authService;
     }
 
     @PostMapping("/signup")
     public ResponseEntity<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userSignupService.signup(request));
+    }
+
+    @PostMapping("/login")
+    public AccessTokenResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
     }
 }

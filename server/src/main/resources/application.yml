@@ -18,3 +18,9 @@ management:
   endpoint:
     health:
       show-details: never
+
+quietup:
+  jwt:
+    secret-base64: ${JWT_SECRET_BASE64}
+    access-expiration-seconds: ${JWT_ACCESS_EXPIRATION_SECONDS}
+    refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS}
