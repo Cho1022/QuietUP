@@ -47,7 +47,7 @@ Android(Java)
   → Amazon RDS for MySQL
 ```
 
-목표 아키텍처 전체는 아직 구현되지 않았습니다. 현재는 Spring Boot와 로컬 MySQL 실행 기반만 구성되어 있으며, Android REST 연동과 AWS 배포는 아직 구현하지 않았습니다. 다음 원칙을 기준으로 전환합니다.
+목표 아키텍처 전체는 아직 구현되지 않았습니다. 현재는 Spring Boot와 로컬 MySQL 실행 기반, 서버 인증 API까지 구성되어 있으며 Android REST 연동과 AWS 배포는 아직 구현하지 않았습니다. 다음 원칙을 기준으로 전환합니다.
 
 - Android 앱은 MySQL에 직접 연결하지 않고 HTTPS API만 호출합니다.
 - 인증과 권한 검증은 서버에서 수행합니다.
@@ -72,7 +72,8 @@ Android(Java)
 
 - Java 21
 - Spring Boot 4.1.0
-- Spring Web MVC·Validation·Spring Data JPA
+- Spring Web MVC·Validation·Spring Data JPA·Spring Security
+- JWT Access Token·해시 저장형 Refresh Token
 - MySQL 8.4·Flyway
 - Docker Compose
 - Actuator Health Check
@@ -99,18 +100,22 @@ Android(Java)
 - Java 21 기반 Spring Boot 서버 실행 기반을 구성했습니다.
 - 로컬 MySQL 8.4 Docker Compose 환경을 구성했습니다.
 - `GET /actuator/health`로 서버와 DB 연결 상태를 확인할 수 있습니다.
-- Testcontainers가 실제 MySQL 8.4 연결과 최소 쿼리, Flyway 초기화를 검증합니다.
+- 이메일 회원가입·로그인과 BCrypt 비밀번호 저장을 구현했습니다.
+- JWT Access Token 인증과 현재 사용자 조회를 구현했습니다.
+- Refresh Token 해시 저장·회전과 멱등 로그아웃을 구현했습니다.
+- Testcontainers가 실제 MySQL 8.4에서 인증 API와 Flyway 스키마를 검증합니다.
 - Android 앱은 아직 Spring Boot REST API에 연결되지 않았습니다.
 
 ### 아직 구현되지 않은 항목
 
-- 서버 회원가입·로그인
-- Spring Security·JWT
 - 단지 및 거주 인증
 - 익명 소음 알림
 - 신고 및 차단
 - Android REST 연결
+- Firebase 제거
 - AWS 배포
+
+인증 API 계약과 보안 원칙은 [인증 API 문서](docs/api/authentication.md)에서 확인할 수 있습니다.
 
 ## 로컬 빌드 기준선
 
@@ -159,7 +164,7 @@ Windows PowerShell 기준입니다.
 Copy-Item .env.example .env
 ```
 
-2. `.env`의 `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`, `DB_PASSWORD`를 로컬 개발용 값으로 변경합니다. `.env`는 Git에서 제외됩니다.
+2. `.env`의 DB 비밀번호를 로컬 개발용 값으로 변경하고, `JWT_SECRET_BASE64`에는 Base64로 인코딩한 32바이트 이상의 임의 키를 설정합니다. `.env`는 Git에서 제외됩니다.
 3. 로컬 MySQL을 시작합니다.
 
 ```powershell
@@ -170,7 +175,7 @@ docker compose --env-file .env up -d --wait mysql
 
 ```powershell
 Get-Content .env | ForEach-Object {
-    if ($_ -match '^(DB_URL|DB_USERNAME|DB_PASSWORD)=(.*)$') {
+    if ($_ -match '^(DB_URL|DB_USERNAME|DB_PASSWORD|JWT_SECRET_BASE64|JWT_ACCESS_EXPIRATION_SECONDS|JWT_REFRESH_EXPIRATION_DAYS)=(.*)$') {
         Set-Item "Env:$($matches[1])" $matches[2]
     }
 }
