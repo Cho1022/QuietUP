@@ -60,4 +60,19 @@ public class GlobalExceptionHandler {
                 "USER_NOT_FOUND",
                 exception.getMessage()));
     }
+
+    @ExceptionHandler(ApartmentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleApartmentNotFound(ApartmentNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(
+                "APARTMENT_NOT_FOUND",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidApartmentSearchQueryException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidApartmentSearchQuery(
+            InvalidApartmentSearchQueryException exception) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(
+                "VALIDATION_ERROR",
+                exception.getMessage()));
+    }
 }
