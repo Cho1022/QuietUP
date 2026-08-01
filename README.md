@@ -102,9 +102,10 @@ Android(Java)
 - Android SDK Platform: 34
 - Android SDK Build Tools: 35.0.0
 
-로컬 `local.properties`에 실제 Android SDK 경로를 설정하고 프로젝트 루트에서 실행합니다.
+로컬 `android/local.properties`에 실제 Android SDK 경로를 설정하고 `android/` 디렉터리에서 실행합니다.
 
 ```powershell
+cd android
 .\gradlew.bat :app:clean :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 ```
 
