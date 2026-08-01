@@ -75,4 +75,20 @@ public class GlobalExceptionHandler {
                 "VALIDATION_ERROR",
                 exception.getMessage()));
     }
+
+    @ExceptionHandler(ResidenceAlreadyVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleResidenceAlreadyVerified(
+            ResidenceAlreadyVerifiedException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(
+                "RESIDENCE_ALREADY_VERIFIED",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidResidenceVerificationException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidResidenceVerification(
+            InvalidResidenceVerificationException exception) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(
+                "INVALID_RESIDENCE_VERIFICATION",
+                exception.getMessage()));
+    }
 }
