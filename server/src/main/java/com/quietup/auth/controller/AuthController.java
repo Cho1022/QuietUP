@@ -11,8 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.quietup.user.dto.SignupRequest;
 import com.quietup.user.dto.SignupResponse;
 import com.quietup.user.service.UserSignupService;
-import com.quietup.auth.dto.AccessTokenResponse;
 import com.quietup.auth.dto.LoginRequest;
+import com.quietup.auth.dto.RefreshTokenRequest;
+import com.quietup.auth.dto.TokenResponse;
 import com.quietup.auth.service.AuthService;
 
 import jakarta.validation.Valid;
@@ -36,7 +37,18 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public AccessTokenResponse login(@Valid @RequestBody LoginRequest request) {
+    public TokenResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/refresh")
+    public TokenResponse refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return authService.refresh(request);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request);
+        return ResponseEntity.noContent().build();
     }
 }

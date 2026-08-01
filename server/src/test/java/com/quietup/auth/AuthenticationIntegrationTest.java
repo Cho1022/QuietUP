@@ -11,11 +11,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,9 +74,19 @@ class AuthenticationIntegrationTest {
     @Autowired
     JwtDecoder jwtDecoder;
 
+    private ExecutorService executor;
+
     @BeforeEach
     void cleanDatabase() {
+        jdbcTemplate.update("DELETE FROM refresh_tokens");
         jdbcTemplate.update("DELETE FROM users");
+    }
+
+    @AfterEach
+    void shutdownExecutor() {
+        if (executor != null) {
+            executor.shutdownNow();
+        }
     }
 
     @Test
@@ -82,14 +98,22 @@ class AuthenticationIntegrationTest {
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.accessToken").isString())
                 .andExpect(jsonPath("$.accessTokenExpiresIn").value(900))
+                .andExpect(jsonPath("$.refreshToken").isString())
                 .andReturn();
 
-        String accessToken = extractJsonString(result.getResponse().getContentAsString(), "accessToken");
+        String responseBody = result.getResponse().getContentAsString();
+        String accessToken = extractJsonString(responseBody, "accessToken");
+        String refreshToken = extractJsonString(responseBody, "refreshToken");
         Jwt jwt = jwtDecoder.decode(accessToken);
+        String storedTokenHash = jdbcTemplate.queryForObject(
+                "SELECT token_hash FROM refresh_tokens",
+                String.class);
 
         assertEquals(Set.of("sub", "iat", "exp"), jwt.getClaims().keySet());
         assertFalse(jwt.hasClaim("email"));
         assertFalse(jwt.hasClaim("nickname"));
+        assertNotEquals(refreshToken, storedTokenHash);
+        assertTrue(storedTokenHash.matches("[0-9a-f]{64}"));
     }
 
     @Test
@@ -147,6 +171,113 @@ class AuthenticationIntegrationTest {
                 .andExpect(jsonPath("$.code").value("USER_NOT_FOUND"));
     }
 
+    @Test
+    void rotatesRefreshTokenAndRejectsOldTokenReuse() throws Exception {
+        signup();
+        LoginTokens loginTokens = loginAndGetTokens();
+
+        MvcResult refreshResult = refresh(loginTokens.refreshToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.accessToken").isString())
+                .andExpect(jsonPath("$.accessTokenExpiresIn").value(900))
+                .andExpect(jsonPath("$.refreshToken").isString())
+                .andReturn();
+        String newRefreshToken = extractJsonString(
+                refreshResult.getResponse().getContentAsString(),
+                "refreshToken");
+
+        assertNotEquals(loginTokens.refreshToken(), newRefreshToken);
+        assertInvalidRefreshToken(loginTokens.refreshToken());
+        assertEquals(2, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM refresh_tokens", Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM refresh_tokens WHERE revoked_at IS NOT NULL",
+                Integer.class));
+        assertFalse(jdbcTemplate.queryForList(
+                "SELECT token_hash FROM refresh_tokens",
+                String.class).contains(newRefreshToken));
+    }
+
+    @Test
+    void returnsSameUnauthorizedResponseForExpiredRevokedAndUnknownRefreshTokens() throws Exception {
+        signup();
+        String expiredToken = loginAndGetTokens().refreshToken();
+        jdbcTemplate.update("""
+                UPDATE refresh_tokens
+                SET expires_at = UTC_TIMESTAMP(6) - INTERVAL 1 DAY
+                WHERE revoked_at IS NULL
+                """);
+        String expiredResponse = assertInvalidRefreshToken(expiredToken);
+
+        String revokedToken = loginAndGetTokens().refreshToken();
+        logout(revokedToken).andExpect(status().isNoContent());
+        String revokedResponse = assertInvalidRefreshToken(revokedToken);
+        String unknownResponse = assertInvalidRefreshToken("unknown-refresh-token");
+
+        assertEquals(expiredResponse, revokedResponse);
+        assertEquals(expiredResponse, unknownResponse);
+    }
+
+    @Test
+    void allowsOnlyOneConcurrentRefreshForSameToken() throws Exception {
+        signup();
+        String refreshToken = loginAndGetTokens().refreshToken();
+        executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+
+        Future<Integer> first = executor.submit(() -> performConcurrentRefresh(refreshToken, ready, start));
+        Future<Integer> second = executor.submit(() -> performConcurrentRefresh(refreshToken, ready, start));
+
+        ready.await();
+        start.countDown();
+
+        List<Integer> statuses = List.of(first.get(), second.get()).stream().sorted().toList();
+        assertEquals(List.of(200, 401), statuses);
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM refresh_tokens WHERE revoked_at IS NULL",
+                Integer.class));
+    }
+
+    @Test
+    void logsOutIdempotentlyAndPreventsRefresh() throws Exception {
+        signup();
+        String refreshToken = loginAndGetTokens().refreshToken();
+
+        logout(refreshToken).andExpect(status().isNoContent());
+        assertInvalidRefreshToken(refreshToken);
+        logout(refreshToken).andExpect(status().isNoContent());
+        logout("unknown-refresh-token").andExpect(status().isNoContent());
+    }
+
+    @Test
+    void appliesFlywayVersionsAndRefreshTokenConstraints() {
+        List<String> versions = jdbcTemplate.queryForList(
+                "SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank",
+                String.class);
+        Integer requiredConstraints = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM information_schema.table_constraints
+                WHERE table_schema = DATABASE()
+                  AND constraint_name IN (
+                    'uk_users_email',
+                    'uk_refresh_tokens_token_hash',
+                    'fk_refresh_tokens_user'
+                  )
+                """, Integer.class);
+        Integer requiredIndexes = jdbcTemplate.queryForObject("""
+                SELECT COUNT(DISTINCT index_name)
+                FROM information_schema.statistics
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'refresh_tokens'
+                  AND index_name IN ('idx_refresh_tokens_user_id', 'idx_refresh_tokens_expires_at')
+                """, Integer.class);
+
+        assertEquals(List.of("1", "2"), versions);
+        assertEquals(3, requiredConstraints);
+        assertEquals(2, requiredIndexes);
+    }
+
     private long signup() throws Exception {
         mockMvc.perform(post("/api/v1/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -176,10 +307,59 @@ class AuthenticationIntegrationTest {
     }
 
     private String loginAndGetAccessToken() throws Exception {
+        return loginAndGetTokens().accessToken();
+    }
+
+    private LoginTokens loginAndGetTokens() throws Exception {
         MvcResult result = login("user@example.com", "password123")
                 .andExpect(status().isOk())
                 .andReturn();
-        return extractJsonString(result.getResponse().getContentAsString(), "accessToken");
+        String responseBody = result.getResponse().getContentAsString();
+        return new LoginTokens(
+                extractJsonString(responseBody, "accessToken"),
+                extractJsonString(responseBody, "refreshToken"));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions refresh(String refreshToken) throws Exception {
+        return mockMvc.perform(post("/api/v1/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(tokenRequestBody(refreshToken)));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions logout(String refreshToken) throws Exception {
+        return mockMvc.perform(post("/api/v1/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(tokenRequestBody(refreshToken)));
+    }
+
+    private String assertInvalidRefreshToken(String refreshToken) throws Exception {
+        MvcResult result = refresh(refreshToken)
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_REFRESH_TOKEN"))
+                .andExpect(jsonPath("$.message").value("유효하지 않은 리프레시 토큰입니다."))
+                .andReturn();
+        return result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+    }
+
+    private int performConcurrentRefresh(
+            String refreshToken,
+            CountDownLatch ready,
+            CountDownLatch start) {
+        try {
+            ready.countDown();
+            start.await();
+            return refresh(refreshToken).andReturn().getResponse().getStatus();
+        } catch (Exception exception) {
+            throw new IllegalStateException(exception);
+        }
+    }
+
+    private String tokenRequestBody(String refreshToken) {
+        return """
+                {
+                  "refreshToken": "%s"
+                }
+                """.formatted(refreshToken);
     }
 
     private String encodeWithDifferentKey(long userId) {
@@ -217,5 +397,8 @@ class AuthenticationIntegrationTest {
         assertTrue(valueStart >= marker.length());
         int valueEnd = json.indexOf('"', valueStart);
         return json.substring(valueStart, valueEnd);
+    }
+
+    private record LoginTokens(String accessToken, String refreshToken) {
     }
 }
