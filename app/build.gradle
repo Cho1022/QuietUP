@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+    id 'com.google.gms.google-services'   // ← 지금은 주석 유지 (google-services.json 없으니까)
+}
+
+android {
+    namespace 'com.example.quietp'
+    compileSdk 34   // 36 말고 34로 맞춰두는 걸 추천 (너 지금 34로 바꿨을 거라 가정)
+
+    defaultConfig {
+        applicationId "com.example.quietp"
+        minSdk 33
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    implementation libs.appcompat
+    implementation libs.material
+    // implementation libs.activity
+    implementation 'androidx.activity:activity:1.8.2'
+    implementation libs.constraintlayout
+
+    // ⭐ 스플래시스크린용 라이브러리 추가
+    implementation 'androidx.core:core-splashscreen:1.0.1'
+
+    // Firebase BOM + 각 모듈
+    implementation platform('com.google.firebase:firebase-bom:33.5.1')
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-database'
+    implementation 'com.google.firebase:firebase-storage'
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-firestore:26.0.2'
+
+    // OnCompleteListener, Task 관련
+    implementation 'com.google.android.gms:play-services-tasks:18.2.0'
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
+
+    testImplementation libs.junit
+}

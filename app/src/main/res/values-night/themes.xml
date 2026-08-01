@@ -1,0 +1,22 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 기본 앱 테마 -->
+    <style name="Base.Theme.Quietp" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Theme.Quietp" parent="Base.Theme.Quietp" />
+
+    <!-- 스플래시 테마 (여기만 추가) -->
+    <style name="Theme.Quietp.Splash" parent="Theme.SplashScreen">
+        <!-- 스플래시 배경색 : 그냥 검정 -->
+        <item name="windowSplashScreenBackground">@android:color/black</item>
+
+        <!-- 네가 만든 로고 (mipmap/ic_quietup.png) -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+
+        <!-- 기본 애니메이션 시간 (ms) -->
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+
+        <!-- 스플래시 끝난 뒤 쓸 앱 테마 -->
+        <item name="postSplashScreenTheme">@style/Theme.Quietp</item>
+    </style>
+
+</resources>

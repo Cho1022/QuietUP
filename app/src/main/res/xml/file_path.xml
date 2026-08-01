@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 내부 저장소(앱 전용) 파일 공유용 -->
+    <files-path
+        name="internal_files"
+        path="." />
+
+    <!-- 외부 저장소(Downloads 등)까지 허용하고 싶으면 이거 사용 -->
+    <!--
+    <external-path
+        name="external_files"
+        path="." />
+    -->
+</paths>

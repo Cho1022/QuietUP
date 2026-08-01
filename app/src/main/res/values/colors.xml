@@ -1,0 +1,22 @@
+<resources>
+    <!-- 기본 배경/화이트 -->
+    <color name="qup_white">#FFFFFF</color>
+
+    <!-- 브랜드 청록색 (대략값, 실제 RGB 맞추면 수정) -->
+    <color name="qup_teal">#00805C</color>
+
+    <!-- 하늘색 배경 (Noise Complant Alert 화면) -->
+    <color name="qup_sky">#9EE7FF</color>
+
+    <!-- 텍스트 / 버튼용 진한 색 -->
+    <color name="qup_black">#111111</color>
+
+    <!-- 비활성/보조 텍스트 -->
+    <color name="qup_grey">#888888</color>
+    <color name="qup_bg">#FFF8F3FF</color>
+    <color name="login_disabled_gray">#FFE0E0E0</color>   <!-- 비활성 회색 -->
+    <color name="login_enabled_blue">#03A9F4</color>    <!-- 활성 보라/파랑 -->
+    <color name="login_button_disabled">#767373</color> <!-- 비활성 회색 -->
+
+
+</resources>
