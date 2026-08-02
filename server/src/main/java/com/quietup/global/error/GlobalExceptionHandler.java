@@ -91,4 +91,26 @@ public class GlobalExceptionHandler {
                 "INVALID_RESIDENCE_VERIFICATION",
                 exception.getMessage()));
     }
+
+    @ExceptionHandler(ResidenceRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleResidenceRequired(ResidenceRequiredException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(
+                "RESIDENCE_REQUIRED",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoiseAlertTargetUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertTargetUnavailable(
+            NoiseAlertTargetUnavailableException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(
+                "NOISE_ALERT_TARGET_UNAVAILABLE",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoiseAlertNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertNotFound(NoiseAlertNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(
+                "NOISE_ALERT_NOT_FOUND",
+                exception.getMessage()));
+    }
 }

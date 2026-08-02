@@ -23,4 +23,18 @@ public interface ApartmentUnitRepository extends JpaRepository<ApartmentUnit, Lo
             @Param("apartmentId") Long apartmentId,
             @Param("buildingNumber") String buildingNumber,
             @Param("unitNumber") String unitNumber);
+
+    @Query("""
+            select apartmentUnit
+            from ApartmentUnit apartmentUnit
+            join fetch apartmentUnit.building building
+            join fetch building.apartmentComplex
+            where building.id = :buildingId
+              and apartmentUnit.floorNumber = :floorNumber
+              and apartmentUnit.lineNumber = :lineNumber
+            """)
+    Optional<ApartmentUnit> findByLocation(
+            @Param("buildingId") Long buildingId,
+            @Param("floorNumber") int floorNumber,
+            @Param("lineNumber") int lineNumber);
 }

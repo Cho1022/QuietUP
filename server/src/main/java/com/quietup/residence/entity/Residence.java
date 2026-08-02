@@ -70,6 +70,10 @@ public class Residence {
         this.updatedAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public ApartmentUnit getUnit() {
         return unit;
     }
