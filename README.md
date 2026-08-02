@@ -37,7 +37,43 @@ QuietUp은 대면 갈등 없이 층간소음 상황을 알리고, 당사자와 �
 4. 반복 발생과 대응 이력은 권한에 따라 입주민 또는 관리 주체에게 제공됩니다.
 5. 게시판·채팅 등 기존 커뮤니티 기능은 서버 API 전환 범위에 맞춰 단계적으로 이전합니다.
 
-## 목표 아키텍처
+## 현재 및 목표 아키텍처
+
+> **구현 상태 기준:** 현재 저장소에는 Android MVP와 Firebase 연동 코드가 보존되어 있습니다. 아래 AWS 구성은 전환을 위한 **목표 구조**이며, Spring Boot 서버와 AWS 리소스는 아직 생성하거나 배포하지 않았습니다.
+
+### 현재 구현 구조 — Android MVP / Firebase 레거시
+
+```text
+Android 앱 (Java · XML)
+  ├─ Firebase Authentication
+  ├─ Firebase Realtime Database
+  └─ Firebase 부가 SDK (Storage · Analytics · Firestore)
+```
+
+연결되어 있던 Firebase 프로젝트 환경은 더 이상 운영되지 않습니다. 기존 코드는 향후 서버 API 전환 시 참조할 수 있도록 보존합니다.
+
+### 전환 목표 구조 — AWS 기반 서버 분리 (미구현)
+
+<p align="center">
+  <strong>Android 앱 (Java · XML)</strong><br>
+  <sub>HTTPS REST API</sub><br>
+  ↓<br>
+  <img src="docs/assets/aws/Arch_Amazon-EC2_48.svg" width="48" alt="Amazon EC2" /><br>
+  <strong>Amazon EC2</strong><br>
+  <sub>Spring Boot · Spring Security · Spring Data JPA</sub><br>
+  ↓<br>
+  <img src="docs/assets/aws/Arch_Amazon-RDS_48.svg" width="48" alt="Amazon RDS" /><br>
+  <strong>Amazon RDS for MySQL</strong><br>
+  <sub>비공개 네트워크의 데이터베이스</sub>
+</p>
+
+<p align="center">
+  <img src="docs/assets/aws/Arch_Amazon-CloudWatch_48.svg" width="48" alt="Amazon CloudWatch" /><br>
+  <strong>Amazon CloudWatch</strong><br>
+  <sub>EC2 애플리케이션의 로그·모니터링 (목표)</sub>
+</p>
+
+#### 전환 처리 흐름 (텍스트)
 
 ```text
 Android(Java)
