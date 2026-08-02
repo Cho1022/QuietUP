@@ -5,9 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -16,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -28,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -48,7 +55,10 @@ import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import com.quietup.global.security.JwtTokenService;
+import com.quietup.residence.dto.ResidenceVerificationRequest;
+import com.quietup.residence.entity.Residence;
 import com.quietup.residence.repository.ResidenceRepository;
+import com.quietup.residence.service.ResidenceVerificationService;
 
 @Testcontainers
 @SpringBootTest
@@ -71,6 +81,9 @@ class ResidenceVerificationIntegrationTest {
 
     @Autowired
     JwtTokenService jwtTokenService;
+
+    @Autowired
+    ResidenceVerificationService residenceVerificationService;
 
     @MockitoSpyBean
     ResidenceRepository residenceRepository;
@@ -343,6 +356,44 @@ class ResidenceVerificationIntegrationTest {
         assertCodeUsed(successfulAttempt.codeHash(), userId);
         assertEquals(List.of(firstHash, secondHash).stream().sorted().toList(),
                 attempts.stream().map(VerificationAttempt::codeHash).sorted().toList());
+    }
+
+    @Test
+    void doesNotTranslateUnrelatedOrUnidentifiedIntegrityViolations() {
+        long userId = insertUser("integrity-error@example.com");
+        UnitFixture unit = insertUnit("조용한아파트", "서울특별시 강남구 조용로 1", "101", "1203", 12, 3);
+        String rawCode = "INTEGRITY-01";
+        String codeHash = insertCode(unit.unitId(), rawCode, LocalDateTime.now(ZoneOffset.UTC).plusDays(1), null);
+        ResidenceVerificationRequest request = new ResidenceVerificationRequest(
+                unit.apartmentId(),
+                unit.buildingNumber(),
+                unit.unitNumber(),
+                rawCode);
+        String[] unrelatedConstraintNames = {
+                "fk_residences_unit",
+                "fk_residences_user",
+                "residences.uk_residences_future",
+                null
+        };
+
+        for (String constraintName : unrelatedConstraintNames) {
+            ConstraintViolationException constraintViolation = new ConstraintViolationException(
+                    "관계없는 무결성 오류",
+                    new SQLException("관계없는 무결성 오류"),
+                    "insert into residences",
+                    constraintName);
+            DataIntegrityViolationException expected = new DataIntegrityViolationException(
+                    "관계없는 무결성 오류",
+                    constraintViolation);
+            doThrow(expected).when(residenceRepository).saveAndFlush(any(Residence.class));
+
+            DataIntegrityViolationException actual = assertThrows(
+                    DataIntegrityViolationException.class,
+                    () -> residenceVerificationService.verify(String.valueOf(userId), request));
+
+            assertSame(expected, actual);
+            assertCodeUnused(codeHash);
+        }
     }
 
     private MvcResult invalidVerification(String token, UnitFixture unit, String code) throws Exception {

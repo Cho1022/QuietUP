@@ -9,6 +9,7 @@ import java.util.HexFormat;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,7 @@ import com.quietup.user.repository.UserRepository;
 public class ResidenceVerificationService {
 
     private static final Pattern VERIFICATION_CODE_PATTERN = Pattern.compile("[A-Z0-9-]{8,32}");
+    private static final String RESIDENCE_USER_UNIQUE_CONSTRAINT = "uk_residences_user_id";
 
     private final UserRepository userRepository;
     private final ApartmentUnitRepository apartmentUnitRepository;
@@ -82,7 +84,10 @@ public class ResidenceVerificationService {
         try {
             residence = residenceRepository.saveAndFlush(new Residence(user, unit, now));
         } catch (DataIntegrityViolationException exception) {
-            throw new ResidenceAlreadyVerifiedException();
+            if (isResidenceUserUniqueViolation(exception)) {
+                throw new ResidenceAlreadyVerifiedException();
+            }
+            throw exception;
         }
 
         ApartmentBuilding building = residence.getUnit().getBuilding();
@@ -128,6 +133,23 @@ public class ResidenceVerificationService {
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256을 사용할 수 없습니다.", exception);
         }
+    }
+
+    private boolean isResidenceUserUniqueViolation(DataIntegrityViolationException exception) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException constraintViolation) {
+                String constraintName = constraintViolation.getConstraintName();
+                if (constraintName == null) {
+                    continue;
+                }
+                int qualifierSeparator = constraintName.lastIndexOf('.');
+                String unqualifiedConstraintName = constraintName.substring(qualifierSeparator + 1);
+                if (RESIDENCE_USER_UNIQUE_CONSTRAINT.equals(unqualifiedConstraintName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private ResidenceStatusResponse toStatusResponse(Residence residence) {
