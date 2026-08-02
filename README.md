@@ -83,7 +83,7 @@ Android(Java)
   → Amazon RDS for MySQL
 ```
 
-목표 아키텍처 전체는 아직 구현되지 않았습니다. 현재는 Spring Boot와 로컬 MySQL 실행 기반, 서버 인증 API까지 구성되어 있으며 Android REST 연동과 AWS 배포는 아직 구현하지 않았습니다. 다음 원칙을 기준으로 전환합니다.
+목표 아키텍처 전체는 아직 구현되지 않았습니다. 현재는 Spring Boot와 로컬 MySQL 실행 기반, 서버 인증 API와 거주 인증 도메인까지 구성되어 있으며 Android REST 연동과 AWS 배포는 아직 구현하지 않았습니다. 다음 원칙을 기준으로 전환합니다.
 
 - Android 앱은 MySQL에 직접 연결하지 않고 HTTPS API만 호출합니다.
 - 인증과 권한 검증은 서버에서 수행합니다.
@@ -110,6 +110,8 @@ Android(Java)
 - Spring Boot 4.1.0
 - Spring Web MVC·Validation·Spring Data JPA·Spring Security
 - JWT Access Token·해시 저장형 Refresh Token
+- 아파트 단지·동·세대와 거주 인증 모델
+- SHA-256 해시 저장형 1회용 거주 인증 코드
 - MySQL 8.4·Flyway
 - Docker Compose
 - Actuator Health Check
@@ -139,19 +141,27 @@ Android(Java)
 - 이메일 회원가입·로그인과 BCrypt 비밀번호 저장을 구현했습니다.
 - JWT Access Token 인증과 현재 사용자 조회를 구현했습니다.
 - Refresh Token 해시 저장·회전과 멱등 로그아웃을 구현했습니다.
-- Testcontainers가 실제 MySQL 8.4에서 인증 API와 Flyway 스키마를 검증합니다.
+- 아파트 단지 검색과 단지별 동 조회를 구현했습니다.
+- 아파트 단지·동·세대 기준정보와 한 사용자당 한 개의 인증된 거주 세대 관계를 구현했습니다.
+- SHA-256 해시로 저장한 1회용 코드를 사용해 거주를 인증하고, 비관적 잠금과 DB unique 제약으로 동시 사용을 제어합니다.
+- 다른 사용자에게 내부 사용자·거주·세대 식별정보와 실제 동·호수를 노출하지 않는 사용자 간 비식별 원칙을 적용합니다.
+- Testcontainers가 실제 MySQL 8.4에서 인증·거주 API와 Flyway 스키마를 검증합니다.
 - Android 앱은 아직 Spring Boot REST API에 연결되지 않았습니다.
+
+MVP 거주 인증은 관리 주체가 사전에 발급한 1회용 코드의 해시가 DB에 적재되어 있다고 가정합니다. 행정기관이나 관리사무소 연동 및 코드 발급·관리 기능은 아직 구현하지 않았습니다.
 
 ### 아직 구현되지 않은 항목
 
-- 단지 및 거주 인증
 - 익명 소음 알림
-- 신고 및 차단
+- 정형 응답
+- 채팅
+- 게시판 REST 이전
 - Android REST 연결
-- Firebase 제거
+- 인증 코드 발급 관리자 기능
 - AWS 배포
+- AI·IoT
 
-인증 API 계약과 보안 원칙은 [인증 API 문서](docs/api/authentication.md)에서 확인할 수 있습니다.
+인증 API 계약과 보안 원칙은 [인증 API 문서](docs/api/authentication.md)에서, 거주 인증 정책과 비식별 경계는 [거주 인증 도메인 문서](docs/domain/residence-verification.md)에서 확인할 수 있습니다.
 
 ## 로컬 빌드 기준선
 
