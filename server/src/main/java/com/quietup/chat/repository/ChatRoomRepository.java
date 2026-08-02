@@ -18,6 +18,10 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     @Query("select room from ChatRoom room where room.noiseAlert.id = :noiseAlertId")
     Optional<ChatRoom> findByNoiseAlertIdForUpdate(@Param("noiseAlertId") Long noiseAlertId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select room from ChatRoom room where room.id = :chatRoomId")
+    Optional<ChatRoom> findByIdForUpdate(@Param("chatRoomId") Long chatRoomId);
+
     @Query("""
             select room
             from ChatRoom room

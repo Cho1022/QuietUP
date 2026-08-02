@@ -117,4 +117,15 @@ public class ChatRoom {
     public boolean isAlertSender(Long residenceId) {
         return alertSenderResidence.getId().equals(residenceId);
     }
+
+    public boolean isOpen() {
+        return status == ChatRoomStatus.OPEN;
+    }
+
+    public void close(LocalDateTime now) {
+        if (isOpen()) {
+            this.status = ChatRoomStatus.CLOSED;
+            this.closedAt = now;
+        }
+    }
 }
