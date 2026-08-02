@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.quietup.noise.dto.CreateNoiseAlertRequest;
 import com.quietup.noise.dto.CreatedNoiseAlertResponse;
 import com.quietup.noise.dto.NoiseAlertDetailResponse;
+import com.quietup.noise.dto.NoiseAlertResponseRequest;
+import com.quietup.noise.dto.NoiseAlertResponseResult;
 import com.quietup.noise.dto.ReceivedNoiseAlertResponse;
 import com.quietup.noise.dto.SentNoiseAlertResponse;
 import com.quietup.noise.service.NoiseAlertService;
@@ -55,5 +57,22 @@ public class NoiseAlertController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Long noiseAlertId) {
         return noiseAlertService.getDetail(jwt.getSubject(), noiseAlertId);
+    }
+
+    @PostMapping("/{noiseAlertId}/responses")
+    public ResponseEntity<NoiseAlertResponseResult> respond(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long noiseAlertId,
+            @Valid @RequestBody NoiseAlertResponseRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(noiseAlertService.respond(jwt.getSubject(), noiseAlertId, request));
+    }
+
+    @PostMapping("/{noiseAlertId}/resolve")
+    public ResponseEntity<Void> resolve(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long noiseAlertId) {
+        noiseAlertService.resolve(jwt.getSubject(), noiseAlertId);
+        return ResponseEntity.noContent().build();
     }
 }

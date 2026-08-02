@@ -131,4 +131,24 @@ public class NoiseAlert {
     public LocalDateTime getResolvedAt() {
         return resolvedAt;
     }
+
+    public boolean isResponded() {
+        return status == NoiseAlertStatus.RESPONDED;
+    }
+
+    public boolean isResolved() {
+        return status == NoiseAlertStatus.RESOLVED;
+    }
+
+    public void markResponded(LocalDateTime now) {
+        this.status = NoiseAlertStatus.RESPONDED;
+        this.respondedAt = now;
+    }
+
+    public void resolve(LocalDateTime now) {
+        if (!isResolved()) {
+            this.status = NoiseAlertStatus.RESOLVED;
+            this.resolvedAt = now;
+        }
+    }
 }

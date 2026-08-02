@@ -113,4 +113,36 @@ public class GlobalExceptionHandler {
                 "NOISE_ALERT_NOT_FOUND",
                 exception.getMessage()));
     }
+
+    @ExceptionHandler(NoiseAlertAlreadyRespondedException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertAlreadyResponded(
+            NoiseAlertAlreadyRespondedException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(
+                "NOISE_ALERT_ALREADY_RESPONDED",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoiseAlertAlreadyResolvedException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertAlreadyResolved(
+            NoiseAlertAlreadyResolvedException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(
+                "NOISE_ALERT_ALREADY_RESOLVED",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoiseAlertResponseNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertResponseNotAllowed(
+            NoiseAlertResponseNotAllowedException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(
+                "NOISE_ALERT_RESPONSE_NOT_ALLOWED",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoiseAlertResolveNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertResolveNotAllowed(
+            NoiseAlertResolveNotAllowedException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(
+                "NOISE_ALERT_RESOLVE_NOT_ALLOWED",
+                exception.getMessage()));
+    }
 }
