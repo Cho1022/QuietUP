@@ -12,6 +12,8 @@ public interface ResidenceRepository extends JpaRepository<Residence, Long> {
 
     boolean existsByUserId(Long userId);
 
+    boolean existsByUnitId(Long unitId);
+
     @Query("""
             select residence
             from Residence residence

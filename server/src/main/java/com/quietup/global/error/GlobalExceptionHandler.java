@@ -91,4 +91,58 @@ public class GlobalExceptionHandler {
                 "INVALID_RESIDENCE_VERIFICATION",
                 exception.getMessage()));
     }
+
+    @ExceptionHandler(ResidenceRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleResidenceRequired(ResidenceRequiredException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(
+                "RESIDENCE_REQUIRED",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoiseAlertTargetUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertTargetUnavailable(
+            NoiseAlertTargetUnavailableException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(
+                "NOISE_ALERT_TARGET_UNAVAILABLE",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoiseAlertNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertNotFound(NoiseAlertNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(
+                "NOISE_ALERT_NOT_FOUND",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoiseAlertAlreadyRespondedException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertAlreadyResponded(
+            NoiseAlertAlreadyRespondedException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(
+                "NOISE_ALERT_ALREADY_RESPONDED",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoiseAlertAlreadyResolvedException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertAlreadyResolved(
+            NoiseAlertAlreadyResolvedException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(
+                "NOISE_ALERT_ALREADY_RESOLVED",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoiseAlertResponseNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertResponseNotAllowed(
+            NoiseAlertResponseNotAllowedException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(
+                "NOISE_ALERT_RESPONSE_NOT_ALLOWED",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(NoiseAlertResolveNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleNoiseAlertResolveNotAllowed(
+            NoiseAlertResolveNotAllowedException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(
+                "NOISE_ALERT_RESOLVE_NOT_ALLOWED",
+                exception.getMessage()));
+    }
 }

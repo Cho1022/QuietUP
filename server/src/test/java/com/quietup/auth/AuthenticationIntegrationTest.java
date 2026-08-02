@@ -273,7 +273,7 @@ class AuthenticationIntegrationTest {
                   AND index_name IN ('idx_refresh_tokens_user_id', 'idx_refresh_tokens_expires_at')
                 """, Integer.class);
 
-        assertEquals(List.of("1", "2", "3"), versions);
+        assertEquals(List.of("1", "2", "3", "4"), versions);
         assertEquals(3, requiredConstraints);
         assertEquals(2, requiredIndexes);
     }

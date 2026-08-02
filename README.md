@@ -2,7 +2,7 @@
 
 익명 알림으로 층간소음 문제를 전달하고 대응 이력을 관리하는 아파트 커뮤니티 서비스
 
-QuietUp은 대면 갈등 없이 층간소음 상황을 알리고, 당사자와 관리 주체가 대응 이력을 확인할 수 있도록 만드는 것을 목표로 합니다. 현재 저장소에는 초기 Android MVP가 보존되어 있으며, 익명 소음 알림과 서버 기반 이력 관리는 향후 개편 목표입니다.
+QuietUp은 대면 갈등 없이 층간소음 상황을 알리고, 당사자와 관리 주체가 대응 이력을 확인할 수 있도록 만드는 것을 목표로 합니다. 현재 저장소에는 초기 Android MVP가 보존되어 있으며, 서버에는 인증·거주 인증과 공동체 경계 기반 익명 소음 알림·정형 응답·대응 이력이 구현되어 있습니다.
 
 ## 개발 기간
 
@@ -39,20 +39,26 @@ QuietUp은 대면 갈등 없이 층간소음 상황을 알리고, 당사자와 �
 
 ## 현재 및 목표 아키텍처
 
-> **구현 상태 기준:** 현재 저장소에는 Android MVP와 Firebase 연동 코드가 보존되어 있습니다. 아래 AWS 구성은 전환을 위한 **목표 구조**이며, Spring Boot 서버와 AWS 리소스는 아직 생성하거나 배포하지 않았습니다.
+> **구현 상태 기준:** 현재 저장소에는 Android MVP와 Firebase 연동 코드가 보존되어 있고, Spring Boot 서버와 로컬 MySQL 실행 기반이 구현되어 있습니다. 아래 AWS 구성은 전환을 위한 **목표 구조**이며 AWS 리소스는 아직 생성하거나 배포하지 않았습니다.
 
-### 현재 구현 구조 — Android MVP / Firebase 레거시
+### 현재 구현 구조 — Android 레거시와 Spring Boot 서버
 
 ```text
-Android 앱 (Java · XML)
+Android 레거시 앱 (Java · XML)
   ├─ Firebase Authentication
   ├─ Firebase Realtime Database
   └─ Firebase 부가 SDK (Storage · Analytics · Firestore)
+
+Spring Boot 서버 (Java 21)
+  ├─ 인증·토큰
+  ├─ 아파트·세대·거주 인증
+  ├─ 익명 소음 알림·정형 응답·대응 이력
+  └─ Spring Data JPA → 로컬 MySQL 8.4
 ```
 
 연결되어 있던 Firebase 프로젝트 환경은 더 이상 운영되지 않습니다. 기존 코드는 향후 서버 API 전환 시 참조할 수 있도록 보존합니다.
 
-### 전환 목표 구조 — AWS 기반 서버 분리 (미구현)
+### 배포 목표 구조 — AWS 기반 서버 분리 (미구현)
 
 <p align="center">
   <strong>Android 앱 (Java · XML)</strong><br>
@@ -83,7 +89,7 @@ Android(Java)
   → Amazon RDS for MySQL
 ```
 
-목표 아키텍처 전체는 아직 구현되지 않았습니다. 현재는 Spring Boot와 로컬 MySQL 실행 기반, 서버 인증 API와 거주 인증 도메인까지 구성되어 있으며 Android REST 연동과 AWS 배포는 아직 구현하지 않았습니다. 다음 원칙을 기준으로 전환합니다.
+목표 아키텍처의 서버 애플리케이션과 로컬 MySQL 기반은 구현됐지만 AWS 배포는 아직 구현되지 않았습니다. 현재는 서버 인증 API, 거주 인증 도메인과 익명 소음 알림·정형 응답·대응 이력 API까지 구성되어 있으며 Android REST 연동도 아직 구현하지 않았습니다. 다음 원칙을 기준으로 전환합니다.
 
 - Android 앱은 MySQL에 직접 연결하지 않고 HTTPS API만 호출합니다.
 - 인증과 권한 검증은 서버에서 수행합니다.
@@ -112,6 +118,7 @@ Android(Java)
 - JWT Access Token·해시 저장형 Refresh Token
 - 아파트 단지·동·세대와 거주 인증 모델
 - SHA-256 해시 저장형 1회용 거주 인증 코드
+- 공동체 경계 기반 익명 소음 알림·정형 응답·대응 이력
 - MySQL 8.4·Flyway
 - Docker Compose
 - Actuator Health Check
@@ -145,23 +152,25 @@ Android(Java)
 - 아파트 단지·동·세대 기준정보와 한 사용자당 한 개의 인증된 거주 세대 관계를 구현했습니다.
 - SHA-256 해시로 저장한 1회용 코드를 사용해 거주를 인증하고, 비관적 잠금과 DB unique 제약으로 동시 사용을 제어합니다.
 - 다른 사용자에게 내부 사용자·거주·세대 식별정보와 실제 동·호수를 노출하지 않는 사용자 간 비식별 원칙을 적용합니다.
-- Testcontainers가 실제 MySQL 8.4에서 인증·거주 API와 Flyway 스키마를 검증합니다.
+- 현재 세대의 동·층·라인과 `UP`·`DOWN` 방향으로 대상 세대를 서버가 계산하고, 대상 세대에 인증 거주자가 있을 때만 익명 소음 알림을 생성합니다.
+- 발신·수신 이력, 대상 세대의 최초 정형 응답 1건과 발신자의 멱등 해결 처리를 구현했습니다.
+- 비관적 잠금과 DB unique 제약으로 같은 알림에 대한 동시 응답을 1건으로 제한합니다.
+- Testcontainers가 실제 MySQL 8.4에서 인증·거주·익명 소음 알림 API와 Flyway 스키마를 검증합니다.
 - Android 앱은 아직 Spring Boot REST API에 연결되지 않았습니다.
 
 MVP 거주 인증은 관리 주체가 사전에 발급한 1회용 코드의 해시가 DB에 적재되어 있다고 가정합니다. 행정기관이나 관리사무소 연동 및 코드 발급·관리 기능은 아직 구현하지 않았습니다.
 
 ### 아직 구현되지 않은 항목
 
-- 익명 소음 알림
-- 정형 응답
-- 채팅
+- 제한형 익명 채팅(`REQUEST_CHAT`은 현재 정형 응답 유형으로만 존재)
+- FCM 푸시 알림
 - 게시판 REST 이전
 - Android REST 연결
 - 인증 코드 발급 관리자 기능
 - AWS 배포
 - AI·IoT
 
-인증 API 계약과 보안 원칙은 [인증 API 문서](docs/api/authentication.md)에서, 거주 인증 정책과 비식별 경계는 [거주 인증 도메인 문서](docs/domain/residence-verification.md)에서 확인할 수 있습니다.
+인증 API 계약과 보안 원칙은 [인증 API 문서](docs/api/authentication.md)에서, 거주 인증 정책은 [거주 인증 도메인 문서](docs/domain/residence-verification.md)에서, 알림의 공동체 경계와 비식별 원칙은 [익명 소음 알림 도메인 문서](docs/domain/anonymous-noise-alert.md)에서 확인할 수 있습니다.
 
 ## 로컬 빌드 기준선
 
