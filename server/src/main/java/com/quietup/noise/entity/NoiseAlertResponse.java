@@ -62,4 +62,8 @@ public class NoiseAlertResponse {
     public ResponseType getResponseType() {
         return responseType;
     }
+
+    public Residence getResponderResidence() {
+        return responderResidence;
+    }
 }

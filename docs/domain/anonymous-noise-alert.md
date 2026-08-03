@@ -4,7 +4,7 @@
 
 이 문서는 현재 구현된 익명 소음 알림의 대상 세대 계산, 접근 권한, 정형 응답, 해결 상태와 비식별 경계를 설명합니다. 현재 범위는 인증된 거주자가 같은 주거 공동체 안의 바로 위층 또는 아래층 세대에 알림을 보내고 대응 이력을 확인하는 서버 API입니다.
 
-Android REST 연결, FCM 알림 전송, WebSocket과 채팅 메시지는 아직 구현하지 않았습니다.
+`REQUEST_CHAT`에서 파생되는 제한형 REST 채팅은 구현되어 있습니다. Android REST 연결, FCM 알림 전송과 WebSocket·SSE 실시간 연결은 아직 구현하지 않았습니다.
 
 ## 공동체 경계
 
@@ -67,7 +67,7 @@ RESPONDED ──발신자 해결──> RESOLVED
 
 같은 세대에 여러 인증 거주자가 있어도 알림별 응답은 한 건만 저장됩니다. 서비스는 `NoiseAlert` 행을 `PESSIMISTIC_WRITE`로 잠근 뒤 기존 응답을 확인하고, 응답 저장과 `RESPONDED` 상태 변경을 하나의 트랜잭션에서 처리합니다. `noise_alert_responses.noise_alert_id`의 unique 제약이 최종 방어선입니다.
 
-`REQUEST_CHAT`은 후속 기능에 대한 의사 표시일 뿐입니다. 현재 구현은 채팅방이나 메시지를 생성하지 않으며 WebSocket 연결도 제공하지 않습니다. 향후 제한형 익명 채팅을 추가한다면 해당 알림의 발신자와 최초 응답자만 참여시키고, 매 요청에서 사건 참여 권한을 다시 검증해야 합니다.
+`REQUEST_CHAT`은 제한형 익명 채팅을 요청하는 의사 표시입니다. 알림 발신자가 이를 수락해 채팅방 생성 API를 호출하면 해당 알림의 발신자와 최초 응답자만 참여할 수 있습니다. 각 채팅 요청은 사건 참여 권한을 다시 검증하며 WebSocket 연결은 제공하지 않습니다. 세부 정책은 [제한형 익명 채팅 문서](restricted-anonymous-chat.md)에서 설명합니다.
 
 ## API와 접근 권한
 
@@ -104,7 +104,7 @@ RESPONDED ──발신자 해결──> RESOLVED
 
 - Android 앱의 서버 API 전환
 - FCM 푸시 알림
-- 제한형 익명 채팅과 WebSocket
+- WebSocket·SSE 실시간 연결
 - 자유 입력 메시지와 정화 필터
 - 신고·차단과 Rate Limit
 - 관리자 이력 조회

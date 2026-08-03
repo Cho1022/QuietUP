@@ -191,7 +191,7 @@ class ApartmentIntegrationTest {
                   AND column_name IN ('code', 'raw_code', 'verification_code')
                 """, Integer.class);
 
-        assertEquals(List.of("1", "2", "3", "4"), versions);
+        assertEquals(List.of("1", "2", "3", "4", "5"), versions);
         assertEquals(5, tables);
         assertEquals(12, constraints);
         assertEquals(3, indexes);

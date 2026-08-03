@@ -145,4 +145,32 @@ public class GlobalExceptionHandler {
                 "NOISE_ALERT_RESOLVE_NOT_ALLOWED",
                 exception.getMessage()));
     }
+
+    @ExceptionHandler(ChatRequestRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleChatRequestRequired(ChatRequestRequiredException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(
+                "CHAT_REQUEST_REQUIRED",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(ChatRoomNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleChatRoomNotFound(ChatRoomNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(
+                "CHAT_ROOM_NOT_FOUND",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(ChatRoomClosedException.class)
+    public ResponseEntity<ErrorResponse> handleChatRoomClosed(ChatRoomClosedException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(
+                "CHAT_ROOM_CLOSED",
+                exception.getMessage()));
+    }
+
+    @ExceptionHandler(ChatMessageInvalidException.class)
+    public ResponseEntity<ErrorResponse> handleChatMessageInvalid(ChatMessageInvalidException exception) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(
+                "CHAT_MESSAGE_INVALID",
+                exception.getMessage()));
+    }
 }
